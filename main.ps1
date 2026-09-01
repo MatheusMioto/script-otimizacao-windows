@@ -28,9 +28,12 @@ try {
     & "$scriptPath\scripts\01_remover_apps.ps1"
     & "$scriptPath\scripts\02_configurar_privacidade.ps1"
     & "$scriptPath\scripts\03_configurar_windows.ps1"
-
-    Write-Log -Modulo "Orquestrador" -Acao "Otimização geral concluída com sucesso!" -Tipo "SUCCESS"
-} catch {
+    & "$scriptPath\scripts\04_limpar_residuos.ps1"
+}
+catch {
+ 
     Write-Log -Modulo "Orquestrador" -Acao "Erro fatal na execução do orquestrador" -Erro $_.Exception.Message -Tipo "ERROR"
 }
+S
+Start-Sleep -Seconds 3tart-Sleep -Seconds 3
 Start-Sleep -Seconds 3
