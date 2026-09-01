@@ -27,6 +27,7 @@ try {
         "Microsoft.BingNews",
         "Microsoft.ZuneVideo",
         "Microsoft.Paint3D",
+        "Microsoft.Paint",
         "Microsoft.Microsoft3DViewer",
         "Microsoft.WindowsSoundRecorder",
 
@@ -40,6 +41,9 @@ try {
 
         # Apps Modernos Nativos (exceto Teams)
         "Microsoft.549981C3F5F10", # Cortana
+        "Microsoft.MicrosoftEdge", # Microsoft Edge Nativo
+        "Microsoft.MicrosoftEdge.Stable", # Microsoft Edge Chromium
+        "MicrosoftWindows.Client.WebExperience", # Microsoft Copilot e Widgets
         "Clipchamp.Clipchamp",
         "Microsoft.PowerAutomateDesktop",
         "Microsoft.Todos",
