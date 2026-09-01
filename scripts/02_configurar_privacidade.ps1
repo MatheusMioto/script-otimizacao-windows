@@ -60,6 +60,28 @@ try {
         Set-RegistryKey -Path $cdmPath -Name $key -Value 0
     }
 
+    Write-Log -Modulo "Privacidade" -Acao "Aplicando políticas para bloquear atualizações automáticas, inicialização em segundo plano e sidebar do Edge..." -Tipo "INFO"
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" -Name "DoNotUpdateToEdgeWithChromium" -Value 1
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" -Name "CreateDesktopShortcutDefault" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" -Name "RemoveDesktopShortcutDefault" -Value 1
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" -Name "AllowsInstallation" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" -Name "InstallDefault" -Value 0
+
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "StartupBoostEnabled" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "HubsSidebarEnabled" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "CopilotEnabled" -Value 0
+
+    Write-Log -Modulo "Privacidade" -Acao "Aplicando políticas para desativar Copilot, Widgets e integração com Bing Search..." -Tipo "INFO"
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1
+    Set-RegistryKey -Path "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Sidebar" -Name "TurnOffSidebar" -Value 1
+    Set-RegistryKey -Path "HKCU:\Software\Policies\Microsoft\Windows\Sidebar" -Name "TurnOffSidebar" -Value 1
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests" -Value 0
+    Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" -Name "EnableFeeds" -Value 0
+    Set-RegistryKey -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Value 0
+    Set-RegistryKey -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "CortanaConsent" -Value 0
+
     Write-Log -Modulo "Privacidade" -Acao "Módulo de políticas finalizado com sucesso." -Tipo "SUCCESS"
 }
 catch {

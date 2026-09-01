@@ -89,7 +89,31 @@ try {
         }
     }
 
-    # 2. Limpeza de diretórios residuais conhecidos e atalhos do sistema
+    # 2. Limpeza de atalhos (.lnk) do Edge e Copilot na Área de Trabalho, Menu Iniciar e Barra de Tarefas
+    Write-Log -Modulo "LimparResiduos" -Acao "Varrendo e excluindo atalhos (.lnk) residuais de Edge e Copilot..." -Tipo "INFO"
+    $shortcutDirs = @(
+        "C:\Users\Public\Desktop",
+        "$env:USERPROFILE\Desktop",
+        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
+        "$env:PROGRAMDATA\Microsoft\Windows\Start Menu\Programs",
+        "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch",
+        "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"
+    )
+    foreach ($sDir in $shortcutDirs) {
+        if (Test-Path $sDir) {
+            Get-ChildItem -Path $sDir -Recurse -Include "*Edge*.lnk", "*Copilot*.lnk" -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    Remove-Item -Path $_.FullName -Force -ErrorAction Stop
+                    Write-Log -Modulo "LimparResiduos" -Acao "Atalho removido: $($_.FullName)" -Tipo "SUCCESS"
+                }
+                catch {
+                    Write-Log -Modulo "LimparResiduos" -Acao "Falha ao remover atalho: $($_.FullName)" -Erro $_.Exception.Message -Tipo "WARNING"
+                }
+            }
+        }
+    }
+
+    # 3. Limpeza de diretórios residuais conhecidos
     Write-Log -Modulo "LimparResiduos" -Acao "Varrendo diretórios conhecidos do Edge, Copilot e apps de terceiros..." -Tipo "INFO"
     $residualPaths = @(
         "$env:LOCALAPPDATA\Spotify",
@@ -99,28 +123,28 @@ try {
         "${env:ProgramFiles(x86)}\Microsoft\EdgeCore",
         "${env:ProgramFiles(x86)}\Microsoft\EdgeWebView",
         "${env:ProgramFiles}\Microsoft\Edge",
+        "${env:ProgramFiles}\Microsoft\EdgeUpdate",
+        "${env:ProgramFiles}\Microsoft\EdgeCore",
+        "${env:ProgramFiles}\Microsoft\EdgeWebView",
         "$env:LOCALAPPDATA\Microsoft\Edge",
         "$env:LOCALAPPDATA\Microsoft\EdgeUpdate",
         "$env:LOCALAPPDATA\Microsoft\EdgeCore",
         "$env:LOCALAPPDATA\Microsoft\EdgeWebView",
         "$env:APPDATA\Microsoft\Edge",
         "$env:PROGRAMDATA\Microsoft\EdgeUpdate",
-        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Copilot.lnk",
-        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Copilot.lnk",
-        "$env:PROGRAMDATA\Microsoft\Windows\Start Menu\Programs\Copilot.lnk",
-        "$env:PROGRAMDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Copilot.lnk",
-        "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Copilot.lnk",
-        "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Copilot.lnk"
+        "$env:PROGRAMDATA\Microsoft\Edge",
+        "$env:WINDIR\SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe",
+        "$env:WINDIR\SystemApps\Microsoft.MicrosoftEdgeDevToolsClient_8wekyb3d8bbwe"
     )
 
     # Encerra processos que travam DLLs em memória antes da deleção
-    Stop-Process -Name "msedgewebview2", "msedge", "Widgets", "WidgetService", "SearchHost", "PhoneExperienceHost" -Force -ErrorAction SilentlyContinue
+    Stop-Process -Name "msedgewebview2", "msedge", "MicrosoftEdgeUpdate", "identity_helper", "Widgets", "WidgetService", "SearchHost", "PhoneExperienceHost" -Force -ErrorAction SilentlyContinue
 
     foreach ($path in $residualPaths) {
         if (Test-Path $path) {
             try {
-                # Prevenção para pastas do Program Files (TrustedInstaller)
-                if ($path -match "Program Files") {
+                # Prevenção para pastas de sistema/Program Files (TrustedInstaller)
+                if ($path -match "Program Files" -or $path -match "SystemApps") {
                     cmd /c "echo s | takeown /f ""$path"" /r 2>nul" | Out-Null
                     cmd /c "echo y | takeown /f ""$path"" /r 2>nul" | Out-Null
                     icacls "$path" /grant administrators:F /t /q 2>$null | Out-Null

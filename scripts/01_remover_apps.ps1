@@ -45,7 +45,6 @@ try {
         "Microsoft.549981C3F5F10", # Cortana
         "Microsoft.Copilot", # Microsoft Copilot App Standalone
         "Microsoft.Windows.Ai.Copilot.Provider", # Copilot Provider (Windows 11)
-        "Microsoft.MicrosoftEdge", # Microsoft Edge Nativo
         "Microsoft.MicrosoftEdge.Stable", # Microsoft Edge Chromium
         "MicrosoftWindows.Client.WebExperience", # Microsoft Copilot e Widgets
         "Clipchamp.Clipchamp",
@@ -126,10 +125,12 @@ try {
     # 4. Remoção Forçada (Edge e Copilot)
     Write-Log -Modulo "RemoverApps" -Acao "Executando remoção forçada de componentes bloqueados (Edge e Copilot)..." -Tipo "INFO"
     
-    # 4.1 Remoção do Microsoft Edge (Agressiva + Serviços)
+    # 4.1 Remoção do Microsoft Edge (Agressiva + Serviços + Tarefas Agendadas)
     try {
-        Write-Log -Modulo "RemoverApps" -Acao "Parando serviços e processos do Edge..." -Tipo "INFO"
-        Stop-Process -Name "msedge", "MicrosoftEdgeUpdate", "msedgewebview2" -Force -ErrorAction SilentlyContinue
+        Write-Log -Modulo "RemoverApps" -Acao "Parando serviços, tarefas agendadas e processos do Edge..." -Tipo "INFO"
+        Stop-Process -Name "msedge", "MicrosoftEdgeUpdate", "msedgewebview2", "identity_helper" -Force -ErrorAction SilentlyContinue
+        
+        # Desativa serviços do Edge
         foreach ($edgeSvc in @("edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService")) {
             if (Get-Service -Name $edgeSvc -ErrorAction SilentlyContinue) {
                 Stop-Service -Name $edgeSvc -Force -ErrorAction SilentlyContinue
@@ -137,10 +138,28 @@ try {
             }
         }
 
+        # Desativa e remove tarefas agendadas do Edge
+        Get-ScheduledTask | Where-Object { $_.TaskName -like "*Edge*" } | ForEach-Object {
+            Disable-ScheduledTask -TaskName $_.TaskName -TaskPath $_.TaskPath -ErrorAction SilentlyContinue | Out-Null
+            Unregister-ScheduledTask -TaskName $_.TaskName -TaskPath $_.TaskPath -Confirm:$false -ErrorAction SilentlyContinue
+        }
+
         # Remove chave de proteção do registro (NoRemove)
         $edgeReg = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge"
         if (Test-Path $edgeReg) {
             Remove-ItemProperty -Path $edgeReg -Name "NoRemove" -ErrorAction SilentlyContinue
+        }
+
+        # Remove entradas de inicialização automática no registro
+        $runKeys = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+        )
+        foreach ($rKey in $runKeys) {
+            if (Test-Path $rKey) {
+                Remove-ItemProperty -Path $rKey -Name "MicrosoftEdgeAutoLaunch" -ErrorAction SilentlyContinue
+            }
         }
 
         $edgePaths = @(
@@ -162,6 +181,7 @@ try {
     catch {
         Write-Log -Modulo "RemoverApps" -Acao "Falha na remoção forçada do Microsoft Edge." -Erro $_.Exception.Message -Tipo "ERROR"
     }
+
 
     # 4.2 Desativação e Remoção Total do Microsoft Copilot (Com reinício condicional do Explorer)
     try {
