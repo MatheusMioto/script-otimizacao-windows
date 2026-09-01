@@ -34,6 +34,4 @@ catch {
  
     Write-Log -Modulo "Orquestrador" -Acao "Erro fatal na execução do orquestrador" -Erro $_.Exception.Message -Tipo "ERROR"
 }
-S
-Start-Sleep -Seconds 3tart-Sleep -Seconds 3
 Start-Sleep -Seconds 3
