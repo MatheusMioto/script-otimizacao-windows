@@ -77,10 +77,12 @@ try {
             try {
                 $package | Remove-AppxPackage -AllUsers -ErrorAction Stop
                 Write-Log -Modulo "RemoverApps" -Acao "Pacote removido (Appx): $app" -Tipo "SUCCESS"
-            } catch {
+            }
+            catch {
                 Write-Log -Modulo "RemoverApps" -Acao "Falha ao remover Appx: $app" -Erro $_.Exception.Message -Tipo "ERROR"
             }
-        } else {
+        }
+        else {
             Write-Log -Modulo "RemoverApps" -Acao "Pacote Appx não encontrado (já removido): $app" -Tipo "WARNING"
         }
         
@@ -90,13 +92,31 @@ try {
             try {
                 Remove-AppxProvisionedPackage -Online -PackageName $provisioned.PackageName -ErrorAction Stop | Out-Null
                 Write-Log -Modulo "RemoverApps" -Acao "Pacote provisionado removido do sistema: $app" -Tipo "SUCCESS"
-            } catch {
+            }
+            catch {
                 Write-Log -Modulo "RemoverApps" -Acao "Falha ao remover pacote provisionado: $app" -Erro $_.Exception.Message -Tipo "ERROR"
+            }
+        }
+    }
+
+    # 3. Desativação de Serviços Vinculados (Xbox, Mapas)
+    Write-Log -Modulo "RemoverApps" -Acao "Desativando serviços residuais vinculados aos apps apagados..." -Tipo "INFO"
+    $appServices = @("XblAuthManager", "XblGameSave", "XboxGipSvc", "XboxNetApiSvc", "MapsBroker")
+    foreach ($svc in $appServices) {
+        if (Get-Service -Name $svc -ErrorAction SilentlyContinue) {
+            try {
+                Stop-Service -Name $svc -Force -ErrorAction SilentlyContinue
+                Set-Service -Name $svc -StartupType Disabled -ErrorAction Stop
+                Write-Log -Modulo "RemoverApps" -Acao "Serviço residual desativado: $svc" -Tipo "SUCCESS"
+            }
+            catch {
+                Write-Log -Modulo "RemoverApps" -Acao "Falha ao desativar serviço: $svc" -Erro $_.Exception.Message -Tipo "WARNING"
             }
         }
     }
     
     Write-Log -Modulo "RemoverApps" -Acao "Módulo de exclusão finalizado com sucesso." -Tipo "SUCCESS"
-} catch {
+}
+catch {
     Write-Log -Modulo "RemoverApps" -Acao "Falha durante execução do módulo de exclusão." -Erro $_.Exception.Message -Tipo "ERROR"
 }

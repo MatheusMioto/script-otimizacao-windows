@@ -18,7 +18,7 @@ try {
             [string]$Path, 
             [string]$Name, 
             [int]$Value, 
-            [string]$Type="DWord"
+            [string]$Type = "DWord"
         )
         if (-not (Test-Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
@@ -61,6 +61,7 @@ try {
     }
 
     Write-Log -Modulo "Privacidade" -Acao "Módulo de políticas finalizado com sucesso." -Tipo "SUCCESS"
-} catch {
+}
+catch {
     Write-Log -Modulo "Privacidade" -Acao "Falha durante execução do módulo de políticas." -Erro $_.Exception.Message -Tipo "ERROR"
 }
