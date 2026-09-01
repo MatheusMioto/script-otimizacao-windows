@@ -10,11 +10,15 @@
 # Importa o módulo de log
 . "$PSScriptRoot\logger.ps1"
 
+# Validação de elevação (Administrador)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Log -Modulo "RemoverApps" -Acao "Execução interrompida: Permissão de Administrador necessária." -Tipo "ERROR"
+    throw "Execução interrompida: Permissão de Administrador necessária."
+}
+
 Write-Log -Modulo "RemoverApps" -Acao "Iniciando módulo de exclusão de apps" -Tipo "INFO"
 
 try {
-    $restartExplorerNeeded = $false
-
     # Lista de pacotes para remover
     $appsToRemove = @(
         # Especificados diretamente
@@ -185,6 +189,7 @@ try {
 
     # 4.2 Desativação e Remoção Total do Microsoft Copilot (Com reinício condicional do Explorer)
     try {
+        $restartExplorerNeeded = $false
         Write-Log -Modulo "RemoverApps" -Acao "Verificando e desativando Microsoft Copilot no registro..." -Tipo "INFO"
         $copilotKeys = @(
             "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot",

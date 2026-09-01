@@ -9,6 +9,12 @@
 # Importa o módulo de log
 . "$PSScriptRoot\logger.ps1"
 
+# Validação de elevação (Administrador)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Log -Modulo "Privacidade" -Acao "Execução interrompida: Permissão de Administrador necessária." -Tipo "ERROR"
+    throw "Execução interrompida: Permissão de Administrador necessária."
+}
+
 Write-Log -Modulo "Privacidade" -Acao "Iniciando módulo de políticas e privacidade" -Tipo "INFO"
 
 try {
@@ -20,11 +26,23 @@ try {
             [int]$Value, 
             [string]$Type = "DWord"
         )
-        if (-not (Test-Path $Path)) {
-            New-Item -Path $Path -Force | Out-Null
+        try {
+            if (-not (Test-Path $Path)) {
+                New-Item -Path $Path -Force -ErrorAction SilentlyContinue | Out-Null
+            }
+            if (Test-Path $Path) {
+                $existingVal = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+                if ($null -ne $existingVal -and $existingVal -eq $Value) {
+                    Write-Log -Modulo "Privacidade" -Acao "RegKey já configurada: $Path\$Name = $Value" -Tipo "INFO"
+                    return
+                }
+            }
+            Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop | Out-Null
+            Write-Log -Modulo "Privacidade" -Acao "RegKey definida: $Path\$Name = $Value" -Tipo "INFO"
         }
-        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force | Out-Null
-        Write-Log -Modulo "Privacidade" -Acao "RegKey definida: $Path\$Name = $Value" -Tipo "INFO"
+        catch {
+            Write-Log -Modulo "Privacidade" -Acao "RegKey protegida pelo SO/GPO (ignorada): $Path\$Name" -Erro $_.Exception.Message -Tipo "WARNING"
+        }
     }
 
     Write-Log -Modulo "Privacidade" -Acao "Aplicando políticas de Telemetria..." -Tipo "INFO"
@@ -79,6 +97,7 @@ try {
     Set-RegistryKey -Path "HKCU:\Software\Policies\Microsoft\Windows\Sidebar" -Name "TurnOffSidebar" -Value 1
     Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests" -Value 0
     Set-RegistryKey -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" -Name "EnableFeeds" -Value 0
+    Set-RegistryKey -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds" -Name "EnableFeeds" -Value 0
     Set-RegistryKey -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Value 0
     Set-RegistryKey -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "CortanaConsent" -Value 0
 

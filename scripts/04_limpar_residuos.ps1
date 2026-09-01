@@ -9,6 +9,12 @@
 # Importa o módulo de log
 . "$PSScriptRoot\logger.ps1"
 
+# Validação de elevação (Administrador)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Log -Modulo "LimparResiduos" -Acao "Execução interrompida: Permissão de Administrador necessária." -Tipo "ERROR"
+    throw "Execução interrompida: Permissão de Administrador necessária."
+}
+
 Write-Log -Modulo "LimparResiduos" -Acao "Iniciando módulo de limpeza de arquivos residuais" -Tipo "INFO"
 
 try {

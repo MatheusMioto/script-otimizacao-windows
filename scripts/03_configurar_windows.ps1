@@ -9,6 +9,12 @@
 # Importa o módulo de log
 . "$PSScriptRoot\logger.ps1"
 
+# Validação de elevação (Administrador)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Log -Modulo "ConfigGerais" -Acao "Execução interrompida: Permissão de Administrador necessária." -Tipo "ERROR"
+    throw "Execução interrompida: Permissão de Administrador necessária."
+}
+
 Write-Log -Modulo "ConfigGerais" -Acao "Iniciando módulo de configuração do Windows" -Tipo "INFO"
 
 try {
@@ -57,8 +63,18 @@ try {
     try {
         function Set-RegKeySafe {
             param([string]$Path, [string]$Name, $Value, [string]$Type = "DWord")
-            if (-not (Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
-            Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force | Out-Null
+            try {
+                if (Test-Path $Path) {
+                    $existingVal = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+                    if ($null -ne $existingVal -and $existingVal -eq $Value) { return }
+                } else {
+                    New-Item -Path $Path -Force -ErrorAction Stop | Out-Null
+                }
+                Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop | Out-Null
+            }
+            catch {
+                Write-Log -Modulo "ConfigGerais" -Acao "RegKey protegida/ignorada: $Path\$Name" -Erro $_.Exception.Message -Tipo "WARNING"
+            }
         }
 
         # Game Mode (Ativar)
